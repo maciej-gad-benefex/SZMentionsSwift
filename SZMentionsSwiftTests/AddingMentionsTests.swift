@@ -268,7 +268,6 @@ private final class AddingMentions: XCTestCase {
         update(text: " @Jo", type: .insert, on: mentionsListener)
         addMention(named: "John Smith", on: mentionsListener)
         update(text: "", type: .delete, at: NSRange(location: 0, length: textView.text.utf16.count), on: mentionsListener)
-
         XCTAssertTrue(textView.text.isEmpty)
     }
 

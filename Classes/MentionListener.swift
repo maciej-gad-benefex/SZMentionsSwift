@@ -348,13 +348,17 @@ extension MentionListener: UITextViewDelegate {
             shouldChangeText = false
         } else {
             if let mention = mentions |> mentionBeingEdited(at: range) {
-                mention |> clearMention()
                 let values: (text: NSAttributedString, selectedRange: NSRange)
                 let replacementRange: NSRange
-
                 if removeEntireMention {
-                    replacementRange = mention.range
+                    if text.isEmpty, let updatedRange = shouldRemoveLastTagComponent(text: textView.text, mention: mention) {
+                        replacementRange = updatedRange
+                    } else {
+                        mention |> clearMention()
+                        replacementRange = mention.range
+                    }
                 } else {
+                    mention |> clearMention()
                     replacementRange = range
                 }
                 values = mentionsTextView.attributedText
@@ -374,6 +378,28 @@ extension MentionListener: UITextViewDelegate {
             notifyOfTextViewChange(on: textView)
         }
         return shouldChangeText
+    }
+
+    public func shouldRemoveLastTagComponent(text: String, mention: Mention) -> NSRange? {
+        guard let swiftRange = Range(mention.range, in: text) else {
+            return nil
+        }
+        let mentionText = text[swiftRange]
+        print(mentionText)
+        guard let spaceIndex = mentionText.lastIndex(of: " ") else {
+            return nil
+        }
+        let location = mention.range.location
+        let length = mentionText.distance(from: mentionText.startIndex, to: spaceIndex)
+        let range = NSRange(location: location, length: length)
+        var updatedMention = mention
+
+        updatedMention.range = range
+        mentions = mentions |> remove([mention])
+        mentions.append(updatedMention)
+        let removeRangeLength = mentionText.distance(from: spaceIndex, to: mentionText.endIndex)
+        let removeRange = NSRange(location: mention.range.location + length, length: removeRangeLength)
+        return removeRange
     }
 
     public func textViewDidChange(_ textView: UITextView) {
