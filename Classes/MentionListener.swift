@@ -106,6 +106,11 @@ public class MentionListener: NSObject {
     private var mentionEnabled = false
 
     /**
+     @brief Whether or not edition to text was made by delegate
+     */
+    private var editedByDelegate = false
+
+    /**
      @brief Initializer that allows for customization of text attributes for default text and mentions
      @param mentionsTextView: - the text view to manage mentions for
      @param delegate: - the object that will handle textview delegate methods
@@ -337,7 +342,9 @@ extension MentionListener: UITextViewDelegate {
     public func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange,
                          replacementText text: String) -> Bool {
         _ = delegate?.textView?(textView, shouldChangeTextIn: range, replacementText: text)
-
+        guard !editedByDelegate else {
+            return true
+        }
         textView.typingAttributes = defaultTextAttributes.dictionary
 
         var shouldChangeText = true
@@ -363,9 +370,10 @@ extension MentionListener: UITextViewDelegate {
                 }
                 values = mentionsTextView.attributedText
                     |> replace(charactersIn: replacementRange, with: text)
+                editedByDelegate = true
                 mentionsTextView.attributedText = values.text
                 mentionsTextView.selectedRange = values.selectedRange
-
+                editedByDelegate = false
                 shouldChangeText = false
 
                 mentions = mentions |> adjusted(forTextChangeAt: replacementRange, text: text)
